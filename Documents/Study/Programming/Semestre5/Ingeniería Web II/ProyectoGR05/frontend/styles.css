@@ -1,0 +1,274 @@
+:root {
+  --fucsia: #d86ab4;
+  --rosado-claro: #f0a7cf;
+  --naranjado: #f49a63;
+  --amarillo: #f2d35f;
+  --blanco: #fff8f3;
+  --pink-2: #d67aae;
+  --pink-3: #b85f92;
+  --bg-soft: #fff6ef;
+  --text: #2b1b24;
+  --white: #ffffff;
+  --danger: #b42318;
+  --success: #067647;
+  --shadow: 0 10px 25px rgba(184, 95, 146, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(
+    135deg,
+    var(--fucsia) 0%,
+    var(--rosado-claro) 30%,
+    var(--naranjado) 60%,
+    var(--amarillo) 85%,
+    var(--blanco) 100%
+  );
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.main-header {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #000000;
+}
+
+.main-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.main-header p {
+  margin-top: 0.5rem;
+  opacity: 0.95;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--bg-soft);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  margin-top: 0;
+  color: var(--pink-3);
+}
+
+.grid-2,
+.grid-3 {
+  display: grid;
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.grid-2 {
+  grid-template-columns: 1fr auto;
+}
+
+.grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field-message {
+  min-height: 16px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-left: 0.15rem;
+}
+
+.field-message.success {
+  color: var(--success);
+}
+
+.field-message.error {
+  color: var(--danger);
+}
+
+input,
+select,
+button {
+  border-radius: 10px;
+  border: 1px solid #f0b6d2;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid #ff8fc1;
+  border-color: #ff8fc1;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actions.inline {
+  justify-content: flex-end;
+}
+
+.media-actions {
+  justify-content: center;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.btn {
+  background: var(--white);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--pink-2), var(--pink-3));
+  color: var(--white);
+  border: none;
+}
+
+.btn.warning {
+  background: #c55a5a;
+  color: var(--white);
+  border: none;
+}
+
+.btn.danger {
+  background: #7f1d1d;
+  color: var(--white);
+  border: none;
+}
+
+.status {
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.list {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.item {
+  background: var(--white);
+  border: 1px solid #f3c1da;
+  border-radius: 10px;
+  padding: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.item .meta {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin-top: 0.3rem;
+}
+
+.item .item-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.messages {
+  background: var(--white);
+  border: 1px solid #f3c1da;
+  border-radius: 10px;
+  padding: 0.8rem;
+  min-height: 60px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.msg {
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed #f1bad6;
+  font-size: 0.92rem;
+}
+
+.msg:last-child {
+  border-bottom: none;
+}
+
+.msg.success {
+  color: var(--success);
+}
+
+.msg.error {
+  color: var(--danger);
+}
+
+.info-controls {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+}
+
+.info-controls select {
+  min-width: 220px;
+  background: var(--white);
+}
+
+.info-panel {
+  background: var(--white);
+  border: 1px solid #f3c1da;
+  border-radius: 10px;
+  min-height: 120px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 0.9rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.info-line {
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed #f1bad6;
+}
+
+.info-line:last-child {
+  border-bottom: none;
+}
+
+.info-line.success {
+  color: var(--success);
+}
+
+.info-line.error {
+  color: var(--danger);
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Películas - Proyecto</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="main-header">
+    <h1>Caso de estudio "Peliculas" - IU Digital</h1>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Géneros</h2>
+      <form id="generoForm" class="grid-3">
+        <div class="field-wrap">
+          <input type="text" id="generoNombre" placeholder="Nombre" required />
+          <small class="field-message" id="generoNombreMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="text" id="generoDescripcion" placeholder="Descripción" />
+          <small class="field-message" id="generoDescripcionMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="generoEstado">
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+          <small class="field-message" id="generoEstadoMsg"></small>
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit">Crear</button>
+          <button class="btn warning" type="button" id="generoUpdateBtn">Actualizar</button>
+          <button class="btn danger" type="button" id="generoDeleteBtn">Eliminar</button>
+          <button class="btn" type="button" id="reloadGenerosBtn">Recargar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Directores</h2>
+      <form id="directorForm" class="grid-3">
+        <div class="field-wrap">
+          <input type="text" id="directorNombres" placeholder="Nombres" required />
+          <small class="field-message" id="directorNombresMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="directorEstado">
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+          <small class="field-message" id="directorEstadoMsg"></small>
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit">Crear</button>
+          <button class="btn warning" type="button" id="directorUpdateBtn">Actualizar</button>
+          <button class="btn danger" type="button" id="directorDeleteBtn">Eliminar</button>
+          <button class="btn" type="button" id="reloadDirectoresBtn">Recargar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Productoras</h2>
+      <form id="productoraForm" class="grid-3">
+        <div class="field-wrap">
+          <input type="text" id="productoraNombre" placeholder="Nombre" required />
+          <small class="field-message" id="productoraNombreMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="text" id="productoraSlogan" placeholder="Slogan" />
+          <small class="field-message" id="productoraSloganMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="text" id="productoraDescripcion" placeholder="Descripción" />
+          <small class="field-message" id="productoraDescripcionMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="productoraEstado">
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+          <small class="field-message" id="productoraEstadoMsg"></small>
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit">Crear</button>
+          <button class="btn warning" type="button" id="productoraUpdateBtn">Actualizar</button>
+          <button class="btn danger" type="button" id="productoraDeleteBtn">Eliminar</button>
+          <button class="btn" type="button" id="reloadProductorasBtn">Recargar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Tipos</h2>
+      <form id="tipoForm" class="grid-3">
+        <div class="field-wrap">
+          <input type="text" id="tipoNombre" placeholder="Nombre" required />
+          <small class="field-message" id="tipoNombreMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="text" id="tipoDescripcion" placeholder="Descripción" />
+          <small class="field-message" id="tipoDescripcionMsg"></small>
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit">Crear</button>
+          <button class="btn warning" type="button" id="tipoUpdateBtn">Actualizar</button>
+          <button class="btn danger" type="button" id="tipoDeleteBtn">Eliminar</button>
+          <button class="btn" type="button" id="reloadTiposBtn">Recargar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Media (Películas/Series)</h2>
+      <form id="mediaForm" class="grid-3">
+        <div class="field-wrap">
+          <input type="text" id="mediaSerial" placeholder="Serial único" required />
+          <small class="field-message" id="mediaSerialMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="text" id="mediaTitulo" placeholder="Título" required />
+          <small class="field-message" id="mediaTituloMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="text" id="mediaSinopsis" placeholder="Sinopsis" />
+          <small class="field-message" id="mediaSinopsisMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="url" id="mediaUrl" placeholder="URL película/serie" required />
+          <small class="field-message" id="mediaUrlMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="url" id="mediaImagenPortada" placeholder="URL imagen portada" />
+          <small class="field-message" id="mediaImagenPortadaMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <input type="number" id="mediaAnioEstreno" placeholder="Año estreno" required />
+          <small class="field-message" id="mediaAnioEstrenoMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="mediaGenero" required>
+            <option value="">Seleccione género</option>
+          </select>
+          <small class="field-message" id="mediaGeneroMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="mediaDirector" required>
+            <option value="">Seleccione director</option>
+          </select>
+          <small class="field-message" id="mediaDirectorMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="mediaProductora" required>
+            <option value="">Seleccione productora</option>
+          </select>
+          <small class="field-message" id="mediaProductoraMsg"></small>
+        </div>
+        <div class="field-wrap">
+          <select id="mediaTipo" required>
+            <option value="">Seleccione tipo</option>
+          </select>
+          <small class="field-message" id="mediaTipoMsg"></small>
+        </div>
+        <div class="actions media-actions">
+          <button class="btn primary" type="submit">Crear</button>
+          <button class="btn warning" type="button" id="mediaUpdateBtn">Actualizar</button>
+          <button class="btn danger" type="button" id="mediaDeleteBtn">Eliminar</button>
+          <button class="btn" type="button" id="reloadMediasBtn">Recargar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Información</h2>
+      <div class="info-controls">
+        <select id="infoType">
+          <option value="generos">Géneros</option>
+          <option value="directores">Directores</option>
+          <option value="productoras">Productoras</option>
+          <option value="tipos">Tipos</option>
+          <option value="medias">Medias</option>
+          <option value="todo">Todo</option>
+        </select>
+        <button class="btn primary" type="button" id="infoPublishBtn">Publicar</button>
+        <button class="btn" type="button" id="infoRefreshBtn">Refrescar</button>
+      </div>
+      <div id="infoPanel" class="info-panel"></div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
