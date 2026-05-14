@@ -1,0 +1,13 @@
+# Build outputs
+backend/target/
+frontend/target/
+
+# Database connection files
+backend/db/config.properties
+frontend/db/config.properties
+**/config.properties
+
+# IDE files
+.idea/
+.vscode/
+*.iml
