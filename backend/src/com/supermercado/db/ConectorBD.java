@@ -150,8 +150,18 @@ public class ConectorBD {
             for (String stmt : statements) {
                 String s = stmt.trim();
                 if (s.isEmpty()) continue;
+                // Ignorar instrucciones incompatibles con H2 (como USE)
+                String upper = s.toUpperCase();
+                if (upper.startsWith("USE ") || upper.startsWith("DELIMITER ") || upper.startsWith("SET ")) {
+                    continue;
+                }
                 try (PreparedStatement ps = conn.prepareStatement(s)) {
-                    ps.execute();
+                    try {
+                        ps.execute();
+                    } catch (SQLException stmtEx) {
+                        // Registrar y continuar con la siguiente sentencia
+                        System.err.println("Ignorada sentencia SQL en H2: " + stmtEx.getMessage());
+                    }
                 }
             }
             // Verificar si las tablas principales existen; si no, crear un esquema mínimo compatible
