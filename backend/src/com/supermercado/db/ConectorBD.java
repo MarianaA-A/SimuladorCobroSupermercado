@@ -16,6 +16,7 @@ public class ConectorBD {
     private static ConectorBD instancia;
     private Connection conexion;
     private Properties propiedades;
+    private boolean usarH2EnMemoria = false;
 
     private ConectorBD() {
         propiedades = new Properties();
@@ -32,7 +33,8 @@ public class ConectorBD {
     private void cargarConfiguracion() {
         try (InputStream entrada = obtenerEntradaConfiguracion()) {
             if (entrada == null) {
-                System.err.println("No se encontro el archivo config.properties");
+                System.err.println("No se encontro el archivo config.properties, se usará H2 en memoria como fallback");
+                usarH2EnMemoria = true;
                 return;
             }
             propiedades.load(entrada);
@@ -58,6 +60,20 @@ public class ConectorBD {
     }
 
     private Connection crearConexion() throws SQLException {
+        if (usarH2EnMemoria) {
+            try {
+                Class.forName("org.h2.Driver");
+                String url = "jdbc:h2:mem:supermercado;DB_CLOSE_DELAY=-1";
+                Connection conn = DriverManager.getConnection(url, "sa", "");
+                inicializarEsquemaH2(conn);
+                System.out.println("Usando H2 en memoria para pruebas (sin config.properties)");
+                return conn;
+            } catch (ClassNotFoundException e) {
+                System.err.println("Driver H2 no encontrado: " + e.getMessage());
+                throw new SQLException("Driver H2 no disponible", e);
+            }
+        }
+
         String host = propiedades.getProperty("db.host", "localhost");
         String puerto = propiedades.getProperty("db.port", "3306");
         String baseDatos = propiedades.getProperty("db.name", "supermercado_cobro");
@@ -74,13 +90,62 @@ public class ConectorBD {
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection conn = DriverManager.getConnection(url, usuario, contrasena);
-            asegurarEsquemaActivo(conn);
-            System.out.println("Conexion exitosa a base de datos: " + baseDatos);
-            return conn;
+            try {
+                Connection conn = DriverManager.getConnection(url, usuario, contrasena);
+                asegurarEsquemaActivo(conn);
+                System.out.println("Conexion exitosa a base de datos: " + baseDatos);
+                return conn;
+            } catch (SQLException mysqlEx) {
+                System.err.println("Error conectando a MySQL: " + mysqlEx.getMessage());
+                // Intentar fallback a H2 en memoria en caso de error de conexion
+                try {
+                    return crearConexionH2Fallback();
+                } catch (SQLException | ClassNotFoundException fallbackEx) {
+                    // Re-lanzar el error original para que la capa superior lo maneje
+                    throw mysqlEx;
+                }
+            }
         } catch (ClassNotFoundException e) {
             System.err.println("Driver JDBC no encontrado: " + e.getMessage());
-            throw new SQLException("Driver MySQL no disponible", e);
+            // Si el driver MySQL no está, intentar H2 como alternativa
+            try {
+                return crearConexionH2Fallback();
+            } catch (SQLException | ClassNotFoundException ex) {
+                throw new SQLException("Drivers de BD no disponibles", ex);
+            }
+        }
+    }
+
+    private Connection crearConexionH2Fallback() throws SQLException, ClassNotFoundException {
+        Class.forName("org.h2.Driver");
+        String url = "jdbc:h2:mem:supermercado;DB_CLOSE_DELAY=-1";
+        Connection conn = DriverManager.getConnection(url, "sa", "");
+        try {
+            inicializarEsquemaH2(conn);
+        } catch (SQLException e) {
+            // si la inicialización falla, cerramos la conexión y re-lanzamos
+            try { conn.close(); } catch (SQLException ignore) {}
+            throw e;
+        }
+        System.out.println("Fallback: usando H2 en memoria para pruebas");
+        return conn;
+    }
+
+    private void inicializarEsquemaH2(Connection conn) throws SQLException {
+        try (InputStream entrada = getClass().getClassLoader().getResourceAsStream("db/inicializar_bd.sql")) {
+            if (entrada == null) return;
+            String sql = new String(entrada.readAllBytes());
+            // Simple split by semicolon; ignores advanced cases but sufficient for our script
+            String[] statements = sql.split(";\\s*\\r?\\n");
+            for (String stmt : statements) {
+                String s = stmt.trim();
+                if (s.isEmpty()) continue;
+                try (PreparedStatement ps = conn.prepareStatement(s)) {
+                    ps.execute();
+                }
+            }
+        } catch (IOException e) {
+            throw new SQLException("Error leyendo script de inicializacion H2", e);
         }
     }
 
