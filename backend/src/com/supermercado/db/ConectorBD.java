@@ -135,32 +135,53 @@ public class ConectorBD {
         InputStream entrada = getClass().getClassLoader().getResourceAsStream("db/inicializar_bd.sql");
         try {
             if (entrada == null) {
-                // Intentar cargar desde la ruta relativa al proyecto (backend/db/inicializar_bd.sql)
-                java.nio.file.Path alt = java.nio.file.Paths.get("backend", "db", "inicializar_bd.sql");
-                if (java.nio.file.Files.exists(alt)) {
-                    entrada = java.nio.file.Files.newInputStream(alt);
-                } else {
+                // Buscar en varias rutas relativas posibles
+                java.nio.file.Path[] candidates = new java.nio.file.Path[]{
+                        java.nio.file.Paths.get("backend", "db", "inicializar_bd.sql"),
+                        java.nio.file.Paths.get("..", "backend", "db", "inicializar_bd.sql"),
+                        java.nio.file.Paths.get(System.getProperty("user.dir"), "backend", "db", "inicializar_bd.sql")
+                };
+                boolean found = false;
+                for (java.nio.file.Path alt : candidates) {
+                    try {
+                        if (alt != null && java.nio.file.Files.exists(alt)) {
+                            System.out.println("Inicializar H2: cargando script desde " + alt.toAbsolutePath());
+                            entrada = java.nio.file.Files.newInputStream(alt);
+                            found = true;
+                            break;
+                        }
+                    } catch (Exception ex) {
+                        // continue to next candidate
+                    }
+                }
+                if (!found) {
+                    System.out.println("Inicializar H2: resource db/inicializar_bd.sql no encontrada en classpath ni en rutas relativas");
                     return; // nada que inicializar
                 }
+            } else {
+                System.out.println("Inicializar H2: cargando script desde classpath db/inicializar_bd.sql");
             }
 
             String sql = new String(entrada.readAllBytes());
             // Simple split by semicolon; ignores advanced cases but sufficient for our script
             String[] statements = sql.split(";\\s*\\r?\\n");
+            System.out.println("Inicializar H2: ejecutando " + statements.length + " sentencias del script");
             for (String stmt : statements) {
                 String s = stmt.trim();
                 if (s.isEmpty()) continue;
                 // Ignorar instrucciones incompatibles con H2 (como USE)
                 String upper = s.toUpperCase();
                 if (upper.startsWith("USE ") || upper.startsWith("DELIMITER ") || upper.startsWith("SET ")) {
+                    System.out.println("Inicializar H2: ignorando sentencia incompatible: " + s.split("\\n",1)[0]);
                     continue;
                 }
+                System.out.println("Inicializar H2: ejecutando sentencia: " + (s.length() > 120 ? s.substring(0, 120) + "..." : s));
                 try (PreparedStatement ps = conn.prepareStatement(s)) {
                     try {
                         ps.execute();
                     } catch (SQLException stmtEx) {
                         // Registrar y continuar con la siguiente sentencia
-                        System.err.println("Ignorada sentencia SQL en H2: " + stmtEx.getMessage());
+                        System.err.println("Inicializar H2: ignorada sentencia SQL por error: " + stmtEx.getMessage());
                     }
                 }
             }
