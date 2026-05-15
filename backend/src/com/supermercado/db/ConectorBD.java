@@ -132,8 +132,18 @@ public class ConectorBD {
     }
 
     private void inicializarEsquemaH2(Connection conn) throws SQLException {
-        try (InputStream entrada = getClass().getClassLoader().getResourceAsStream("db/inicializar_bd.sql")) {
-            if (entrada == null) return;
+        InputStream entrada = getClass().getClassLoader().getResourceAsStream("db/inicializar_bd.sql");
+        try {
+            if (entrada == null) {
+                // Intentar cargar desde la ruta relativa al proyecto (backend/db/inicializar_bd.sql)
+                java.nio.file.Path alt = java.nio.file.Paths.get("backend", "db", "inicializar_bd.sql");
+                if (java.nio.file.Files.exists(alt)) {
+                    entrada = java.nio.file.Files.newInputStream(alt);
+                } else {
+                    return; // nada que inicializar
+                }
+            }
+
             String sql = new String(entrada.readAllBytes());
             // Simple split by semicolon; ignores advanced cases but sufficient for our script
             String[] statements = sql.split(";\\s*\\r?\\n");
@@ -146,6 +156,10 @@ public class ConectorBD {
             }
         } catch (IOException e) {
             throw new SQLException("Error leyendo script de inicializacion H2", e);
+        } finally {
+            if (entrada != null) {
+                try { entrada.close(); } catch (IOException ignored) {}
+            }
         }
     }
 
