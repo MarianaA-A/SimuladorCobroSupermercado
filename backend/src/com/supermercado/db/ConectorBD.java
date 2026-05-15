@@ -63,7 +63,7 @@ public class ConectorBD {
         if (usarH2EnMemoria) {
             try {
                 Class.forName("org.h2.Driver");
-                String url = "jdbc:h2:mem:supermercado;DB_CLOSE_DELAY=-1";
+                String url = "jdbc:h2:mem:supermercado;MODE=MySQL;DB_CLOSE_DELAY=-1";
                 Connection conn = DriverManager.getConnection(url, "sa", "");
                 inicializarEsquemaH2(conn);
                 System.out.println("Usando H2 en memoria para pruebas (sin config.properties)");
@@ -118,7 +118,7 @@ public class ConectorBD {
 
     private Connection crearConexionH2Fallback() throws SQLException, ClassNotFoundException {
         Class.forName("org.h2.Driver");
-        String url = "jdbc:h2:mem:supermercado;DB_CLOSE_DELAY=-1";
+        String url = "jdbc:h2:mem:supermercado;MODE=MySQL;DB_CLOSE_DELAY=-1";
         Connection conn = DriverManager.getConnection(url, "sa", "");
         try {
             inicializarEsquemaH2(conn);
