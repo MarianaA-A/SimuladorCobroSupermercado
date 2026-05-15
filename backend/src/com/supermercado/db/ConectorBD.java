@@ -154,6 +154,10 @@ public class ConectorBD {
                     ps.execute();
                 }
             }
+            // Verificar si las tablas principales existen; si no, crear un esquema mínimo compatible
+            if (!existeTabla(conn, "clientes") || !existeTabla(conn, "productos") || !existeTabla(conn, "cajeras")) {
+                crearTablasH2Basicas(conn);
+            }
         } catch (IOException e) {
             throw new SQLException("Error leyendo script de inicializacion H2", e);
         } finally {
@@ -161,6 +165,34 @@ public class ConectorBD {
                 try { entrada.close(); } catch (IOException ignored) {}
             }
         }
+    }
+
+    private boolean existeTabla(Connection conn, String tableName) throws SQLException {
+        try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName.toUpperCase(), null)) {
+            return rs.next();
+        }
+    }
+
+    private void crearTablasH2Basicas(Connection conn) throws SQLException {
+        String[] stmts = new String[]{
+                "CREATE TABLE IF NOT EXISTS clientes (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255), activo TINYINT)",
+                "CREATE TABLE IF NOT EXISTS productos (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255), precio DOUBLE, tiempo_procesamiento_segundos INT, activo TINYINT)",
+                "CREATE TABLE IF NOT EXISTS cajeras (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255), estado VARCHAR(50), activo TINYINT)",
+                "CREATE TABLE IF NOT EXISTS transacciones (id INT AUTO_INCREMENT PRIMARY KEY, id_cliente INT, id_cajera INT, total_cliente DOUBLE, tiempo_total_segundos INT, fecha_inicio TIMESTAMP, fecha_fin TIMESTAMP)",
+                "CREATE TABLE IF NOT EXISTS detalle_transacciones (id INT AUTO_INCREMENT PRIMARY KEY, id_transaccion INT, id_producto INT, nombre_producto VARCHAR(255), costo_producto DOUBLE, tiempo_procesamiento_segundos INT)"
+        };
+        for (String s : stmts) {
+            try (PreparedStatement ps = conn.prepareStatement(s)) {
+                ps.execute();
+            }
+        }
+        // Insertar algunos datos de ejemplo para evitar errores de tablas vacías
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO clientes (nombre, activo) VALUES ('Cliente Ejemplo', 1)")) {
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO productos (nombre, precio, tiempo_procesamiento_segundos, activo) VALUES ('Producto Ejemplo', 1000, 1, 1)")) {
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
     }
 
     private void asegurarEsquemaActivo(Connection conn) throws SQLException {
