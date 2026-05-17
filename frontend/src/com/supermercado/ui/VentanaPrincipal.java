@@ -13,10 +13,12 @@ import com.supermercado.service.SimuladorCobro;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -110,6 +112,8 @@ public class VentanaPrincipal extends JFrame {
 
     // ============ CONTROLES DE SIMULACION ============
     private final JComboBox<ItemCombo> comboClientesSimulacion = new JComboBox<>();
+    private final DefaultListModel<ItemCombo> modeloColaClientes = new DefaultListModel<>();
+    private final JList<ItemCombo> listaColaClientes = new JList<>(modeloColaClientes);
     private final JSpinner spinnerCajeras = new JSpinner(new SpinnerNumberModel(1, 1, 20, 1));
     private final JTextField tiempoAutomatico = new JTextField();
 
@@ -238,20 +242,35 @@ public class VentanaPrincipal extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         configurarCampoAutomatico(tiempoAutomatico);
+        listaColaClientes.setVisibleRowCount(5);
 
         gbc.gridx = 0; gbc.gridy = 0;
         panel.add(etiqueta("Cliente"), gbc);
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1;
         panel.add(comboClientesSimulacion, gbc);
 
+        JPanel botonesCola = new JPanel();
+        botonesCola.setBackground(FONDO);
+        botonesCola.add(boton("Agregar a cola", e -> agregarClienteACola()));
+        botonesCola.add(boton("Quitar de cola", e -> quitarClienteDeCola()));
+        botonesCola.add(boton("Limpiar cola", e -> limpiarColaClientes()));
+
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        panel.add(etiqueta("Cajeras"), gbc);
+        panel.add(etiqueta("Cola de clientes"), gbc);
         gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1;
+        panel.add(new JScrollPane(listaColaClientes), gbc);
+
+        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1;
+        panel.add(botonesCola, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
+        panel.add(etiqueta("Cajeras"), gbc);
+        gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 1;
         panel.add(spinnerCajeras, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0;
         panel.add(etiqueta("Tiempo automático"), gbc);
-        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1;
+        gbc.gridx = 1; gbc.gridy = 4; gbc.weightx = 1;
         panel.add(tiempoAutomatico, gbc);
 
         JPanel botones = new JPanel();
@@ -265,7 +284,7 @@ public class VentanaPrincipal extends JFrame {
         botones.add(imprimirResumen);
         botones.add(irAProductos);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
         panel.add(botones, gbc);
 
         JTextArea ayuda = new JTextArea();
@@ -275,11 +294,11 @@ public class VentanaPrincipal extends JFrame {
         ayuda.setWrapStyleWord(true);
         ayuda.setForeground(new Color(88, 88, 88));
         ayuda.setText("Pasos: 1) Selecciona uno o más productos en la pestaña Productos. 2) Elige un cliente. 3) Ejecuta la simulación.");
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
         panel.add(ayuda, gbc);
 
         JLabel aviso = etiqueta("El tiempo se calcula automáticamente a partir de los productos seleccionados.");
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 2;
         panel.add(aviso, gbc);
 
         return panel;
@@ -643,8 +662,7 @@ public class VentanaPrincipal extends JFrame {
     // ============ SIMULACION ============
 
     private void ejecutarSimulacion() {
-        ItemCombo seleccionado = (ItemCombo) comboClientesSimulacion.getSelectedItem();
-        if (seleccionado == null || tablaProductos.getSelectedRows().length == 0) {
+        if (modeloColaClientes.isEmpty() || tablaProductos.getSelectedRows().length == 0) {
             mostrarAviso("Debes seleccionar un cliente y al menos un producto en la pestaña Productos.");
             if (pestanas != null) {
                 pestanas.setSelectedIndex(0);
@@ -652,23 +670,61 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
 
-        // Crear cliente temporal y agregar productos seleccionados
-        clienteTemporal = new Cliente(seleccionado.id, seleccionado.nombre);
-        for (int fila : tablaProductos.getSelectedRows()) {
-            clienteTemporal.agregarProducto(new Producto(
-                    ((Number) modeloProductos.getValueAt(fila, 0)).intValue(),
-                    modeloProductos.getValueAt(fila, 1).toString(),
-                    Double.parseDouble(modeloProductos.getValueAt(fila, 2).toString()),
-                    Integer.parseInt(modeloProductos.getValueAt(fila, 3).toString())
-            ));
+        List<Cliente> clientesEnCola = new ArrayList<>();
+        for (int i = 0; i < modeloColaClientes.size(); i++) {
+            ItemCombo item = modeloColaClientes.get(i);
+            Cliente cliente = new Cliente(item.id, item.nombre);
+            for (int fila : tablaProductos.getSelectedRows()) {
+                cliente.agregarProducto(new Producto(
+                        ((Number) modeloProductos.getValueAt(fila, 0)).intValue(),
+                        modeloProductos.getValueAt(fila, 1).toString(),
+                        Double.parseDouble(modeloProductos.getValueAt(fila, 2).toString()),
+                        Integer.parseInt(modeloProductos.getValueAt(fila, 3).toString())
+                ));
+            }
+            clientesEnCola.add(cliente);
         }
+
+        clienteTemporal = clientesEnCola.get(0);
 
         // Ejecutar simulación concurrente
         int cantidadCajeras = (Integer) spinnerCajeras.getValue();
-        simulacionActual = new SimuladorCobro(cantidadCajeras, List.of(clienteTemporal));
+        simulacionActual = new SimuladorCobro(cantidadCajeras, clientesEnCola);
         simulacionActual.ejecutar();
-        tiempoAutomatico.setText(String.valueOf(clienteTemporal.calcularTiempoTotalSegundos()));
-        consola.setText("Simulación ejecutada. Usa los botones de impresión para ver detalle o resumen.\n");
+        tiempoAutomatico.setText(String.valueOf(clientesEnCola.stream()
+                .mapToInt(Cliente::calcularTiempoTotalSegundos)
+                .sum()));
+        consola.setText("Simulación ejecutada con " + clientesEnCola.size() + " cliente(s) en cola. Usa los botones de impresión para ver detalle o resumen.\n");
+    }
+
+    private void agregarClienteACola() {
+        ItemCombo seleccionado = (ItemCombo) comboClientesSimulacion.getSelectedItem();
+        if (seleccionado == null) {
+            mostrarAviso("Selecciona un cliente para agregar a la cola.");
+            return;
+        }
+
+        for (int i = 0; i < modeloColaClientes.size(); i++) {
+            if (modeloColaClientes.get(i).id == seleccionado.id) {
+                mostrarAviso("Ese cliente ya está en la cola.");
+                return;
+            }
+        }
+
+        modeloColaClientes.addElement(seleccionado);
+    }
+
+    private void quitarClienteDeCola() {
+        int indice = listaColaClientes.getSelectedIndex();
+        if (indice < 0) {
+            mostrarAviso("Selecciona un cliente de la cola para quitarlo.");
+            return;
+        }
+        modeloColaClientes.remove(indice);
+    }
+
+    private void limpiarColaClientes() {
+        modeloColaClientes.clear();
     }
 
     private void imprimirDetalle() {
