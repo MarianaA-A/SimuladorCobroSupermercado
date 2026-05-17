@@ -13,10 +13,14 @@ import java.util.Properties;
  * Gestiona la carga de la configuracion y la creacion de conexiones JDBC a MySQL.
  */
 public class ConectorBD {
+    private static final Object H2_INIT_LOCK = new Object();
+    private static final String H2_MARKER_TABLA = "schema_init_marker";
+    private static final String H2_MARKER_NOMBRE = "h2_seeded";
+
     private static ConectorBD instancia;
-    private Connection conexion;
     private Properties propiedades;
     private boolean usarH2EnMemoria = false;
+    private boolean esquemaH2Inicializado = false;
 
     private ConectorBD() {
         propiedades = new Properties();
@@ -53,10 +57,7 @@ public class ConectorBD {
     }
 
     public Connection obtenerConexion() throws SQLException {
-        if (conexion == null || conexion.isClosed()) {
-            conexion = crearConexion();
-        }
-        return conexion;
+        return crearConexion();
     }
 
     private Connection crearConexion() throws SQLException {
@@ -65,7 +66,7 @@ public class ConectorBD {
                 Class.forName("org.h2.Driver");
                 String url = "jdbc:h2:mem:supermercado;MODE=MySQL;DB_CLOSE_DELAY=-1";
                 Connection conn = DriverManager.getConnection(url, "sa", "");
-                inicializarEsquemaH2(conn);
+                inicializarEsquemaH2SiEsNecesario(conn);
                 System.out.println("Usando H2 en memoria para pruebas (sin config.properties)");
                 return conn;
             } catch (ClassNotFoundException e) {
@@ -121,7 +122,7 @@ public class ConectorBD {
         String url = "jdbc:h2:mem:supermercado;MODE=MySQL;DB_CLOSE_DELAY=-1";
         Connection conn = DriverManager.getConnection(url, "sa", "");
         try {
-            inicializarEsquemaH2(conn);
+            inicializarEsquemaH2SiEsNecesario(conn);
         } catch (SQLException e) {
             // si la inicialización falla, cerramos la conexión y re-lanzamos
             try { conn.close(); } catch (SQLException ignore) {}
@@ -131,7 +132,28 @@ public class ConectorBD {
         return conn;
     }
 
+    private void inicializarEsquemaH2SiEsNecesario(Connection conn) throws SQLException {
+        synchronized (H2_INIT_LOCK) {
+            if (esquemaH2Inicializado) {
+                return;
+            }
+            inicializarEsquemaH2(conn);
+            esquemaH2Inicializado = true;
+        }
+    }
+
     private void inicializarEsquemaH2(Connection conn) throws SQLException {
+        if (esquemaYaInicializadoEnBD(conn)) {
+            esquemaH2Inicializado = true;
+            return;
+        }
+
+        if (tieneProductosRegistrados(conn)) {
+            marcarEsquemaInicializado(conn);
+            esquemaH2Inicializado = true;
+            return;
+        }
+
         InputStream entrada = getClass().getClassLoader().getResourceAsStream("db/inicializar_bd.sql");
         try {
             if (entrada == null) {
@@ -189,12 +211,66 @@ public class ConectorBD {
             if (!existeTabla(conn, "clientes") || !existeTabla(conn, "productos") || !existeTabla(conn, "cajeras")) {
                 crearTablasH2Basicas(conn);
             }
+            marcarEsquemaInicializado(conn);
         } catch (IOException e) {
             throw new SQLException("Error leyendo script de inicializacion H2", e);
         } finally {
             if (entrada != null) {
                 try { entrada.close(); } catch (IOException ignored) {}
             }
+        }
+    }
+
+    private boolean tieneProductosRegistrados(Connection conn) {
+        String sql = "SELECT COUNT(*) FROM productos";
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() && rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private boolean esquemaYaInicializadoEnBD(Connection conn) {
+        if (!existeTablaSilencioso(conn, H2_MARKER_TABLA)) {
+            return false;
+        }
+
+        String sql = "SELECT COUNT(*) FROM " + H2_MARKER_TABLA + " WHERE nombre = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, H2_MARKER_NOMBRE);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private void marcarEsquemaInicializado(Connection conn) {
+        String crearTablaSql = "CREATE TABLE IF NOT EXISTS " + H2_MARKER_TABLA + " (" +
+                "nombre VARCHAR(50) PRIMARY KEY, " +
+                "fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                ")";
+        String insertarSql = "MERGE INTO " + H2_MARKER_TABLA + " (nombre) KEY(nombre) VALUES (?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(crearTablaSql)) {
+            stmt.execute();
+        } catch (SQLException ignored) {
+        }
+
+        try (PreparedStatement stmt = conn.prepareStatement(insertarSql)) {
+            stmt.setString(1, H2_MARKER_NOMBRE);
+            stmt.executeUpdate();
+        } catch (SQLException ignored) {
+        }
+    }
+
+    private boolean existeTablaSilencioso(Connection conn, String tableName) {
+        try {
+            return existeTabla(conn, tableName);
+        } catch (SQLException e) {
+            return false;
         }
     }
 
@@ -267,19 +343,11 @@ public class ConectorBD {
     }
 
     public void cerrar() {
-        try {
-            if (conexion != null && !conexion.isClosed()) {
-                conexion.close();
-                System.out.println("Conexion cerrada");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error cerrando conexion: " + e.getMessage());
-        }
+        System.out.println("ConectorBD no mantiene una conexion compartida abierta");
     }
 
     public boolean verificarConexion() {
-        try {
-            Connection conn = obtenerConexion();
+        try (Connection conn = obtenerConexion()) {
             return conn != null && !conn.isClosed();
         } catch (SQLException e) {
             System.err.println("Error verificando conexion: " + e.getMessage());
