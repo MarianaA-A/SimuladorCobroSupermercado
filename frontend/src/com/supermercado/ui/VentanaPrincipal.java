@@ -93,6 +93,9 @@ public class VentanaPrincipal extends JFrame {
     private final JTable tablaClientes = new JTable(modeloClientes);
     private final JTable tablaCajeras = new JTable(modeloCajeras);
 
+    // ============ CONTENEDOR DE PESTAÑAS ============
+    private JTabbedPane pestanas;
+
     // ============ CAMPOS DE FORMULARIO - PRODUCTOS ============
     private final JTextField productoNombre = new JTextField();
     private final JTextField productoPrecio = new JTextField();
@@ -142,7 +145,7 @@ public class VentanaPrincipal extends JFrame {
     // ============ CONSTRUCCION DE UI ============
 
     private void construirUI() {
-        JTabbedPane pestanas = new JTabbedPane();
+        pestanas = new JTabbedPane();
         pestanas.addTab("Productos", construirPanelProductos());
         pestanas.addTab("Clientes", construirPanelClientes());
         pestanas.addTab("Cajeras", construirPanelCajeras());
@@ -256,15 +259,27 @@ public class VentanaPrincipal extends JFrame {
         JButton simular = boton("Ejecutar simulación", e -> ejecutarSimulacion());
         JButton imprimirDetalle = boton("Imprimir detalle", e -> imprimirDetalle());
         JButton imprimirResumen = boton("Imprimir resumen", e -> imprimirResumen());
+        JButton irAProductos = boton("Ir a productos", e -> mostrarPestanaProductos());
         botones.add(simular);
         botones.add(imprimirDetalle);
         botones.add(imprimirResumen);
+        botones.add(irAProductos);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         panel.add(botones, gbc);
 
-        JLabel aviso = etiqueta("El tiempo se calcula automáticamente a partir de los productos.");
+        JTextArea ayuda = new JTextArea();
+        ayuda.setEditable(false);
+        ayuda.setOpaque(false);
+        ayuda.setLineWrap(true);
+        ayuda.setWrapStyleWord(true);
+        ayuda.setForeground(new Color(88, 88, 88));
+        ayuda.setText("Pasos: 1) Selecciona uno o más productos en la pestaña Productos. 2) Elige un cliente. 3) Ejecuta la simulación.");
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        panel.add(ayuda, gbc);
+
+        JLabel aviso = etiqueta("El tiempo se calcula automáticamente a partir de los productos seleccionados.");
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
         panel.add(aviso, gbc);
 
         return panel;
@@ -630,7 +645,10 @@ public class VentanaPrincipal extends JFrame {
     private void ejecutarSimulacion() {
         ItemCombo seleccionado = (ItemCombo) comboClientesSimulacion.getSelectedItem();
         if (seleccionado == null || tablaProductos.getSelectedRows().length == 0) {
-            mostrarAviso("Debes seleccionar un cliente y al menos un producto.");
+            mostrarAviso("Debes seleccionar un cliente y al menos un producto en la pestaña Productos.");
+            if (pestanas != null) {
+                pestanas.setSelectedIndex(0);
+            }
             return;
         }
 
@@ -880,6 +898,13 @@ public class VentanaPrincipal extends JFrame {
 
     private void recargarTodo() {
         cargarDatos();
+    }
+
+    private void mostrarPestanaProductos() {
+        if (pestanas != null) {
+            pestanas.setSelectedIndex(0);
+        }
+        tablaProductos.requestFocusInWindow();
     }
 
     // ============ METODOS AUXILIARES DE UI Y ESTILOS ============
